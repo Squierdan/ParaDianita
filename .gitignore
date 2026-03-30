@@ -1,0 +1,11 @@
+# Backups/local checkpoints
+index.checkpoint-*.html
+index.html.pre-fix-backup
+
+# Editor/system files
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# Temporary validation files
+tmp-check.js
