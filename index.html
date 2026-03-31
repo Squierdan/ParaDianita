@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data: blob:; media-src 'self' https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline'; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <meta name="theme-color" content="#0d0a0e">
     <title>Diana y Elian ♥</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/220/220073.png">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/220/220073.png">
+    <link id="favicon32" rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/220/220073.png" data-versioned="true">
+    <link id="appleTouchIcon" rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/220/220073.png" data-versioned="true">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
@@ -103,6 +106,13 @@
             color: var(--gold);
             letter-spacing: .05em;
             line-height: 1;
+        }
+        .nav-logo span {
+            display: inline-block;
+            max-width: 46vw;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .nav-logo-icon {
             width: 23px;
@@ -447,7 +457,7 @@
         .mp {
             position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
             display: flex; align-items: center; justify-content: space-between;
-            gap: 1.5rem; padding: .9rem 2rem;
+            gap: 1.5rem; padding: .9rem 2rem calc(.9rem + env(safe-area-inset-bottom));
             background: rgba(13,10,14,.92);
             border-top: 1px solid rgba(201,169,110,.2);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -526,7 +536,7 @@
             background: var(--gold); border: none; cursor: pointer;
         }
 
-        body { padding-bottom: 82px; }
+        body { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
@@ -545,6 +555,8 @@
         }
         @media (max-width: 768px) {
             nav { padding: 1rem 1.5rem; }
+            .nav-logo { font-size: 1.2rem; }
+            .nav-logo-icon { width: 20px; height: 20px; }
             .nav-links {
                 position: fixed; top: 0; right: 0; height: 100vh; width: 70%; max-width: 280px;
                 background: var(--bg2); flex-direction: column; justify-content: center;
@@ -577,6 +589,12 @@
             .gallery-grid { grid-template-columns: 1fr 1fr; gap: .8rem; }
         }
         @media (max-width: 420px) {
+            nav { padding: .9rem 1rem; }
+            .nav-logo { font-size: 1.05rem; gap: .45rem; }
+            .nav-logo span { max-width: 58vw; }
+            .hero-subtitle { font-size: .78rem; letter-spacing: .06em; }
+            .mp-time { min-width: 26px; font-size: .6rem; }
+            .mp-progress-row { gap: .45rem; }
             .gallery-grid { grid-template-columns: 1fr; }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -602,6 +620,7 @@
         <img
             class="nav-logo-icon"
             src="https://cdn-icons-png.flaticon.com/512/220/220073.png"
+            data-versioned="true"
             alt="Ícono de gato"
             loading="eager"
             decoding="async"
@@ -721,6 +740,7 @@
     </div>
     <p class="icon-credit">
         <a href="https://www.flaticon.es/iconos-gratis/gatos" title="gatos iconos" target="_blank" rel="noopener noreferrer">
+            Gatos iconos creados por Freepik - Flaticon
         </a>
     </p>
 </footer>
@@ -816,11 +836,16 @@ acompañando el paso de tu vida.
 Con todo mi amor,`,
     letterSign:  '— Elian C. ♥',
 };
+
+// Incrementa este valor en cada despliegue para forzar refresco de versión.
+const APP_RELEASE = '2026-03-30-r3';
+
 const STORAGE_KEYS = Object.freeze({
     photos: 'photos',
     memories: 'memories',
     phrases: 'phrases',
     seedVersion: 'seedVersion',
+    appRelease: 'appRelease',
 });
 
 const DRIVE_THUMB_SIZE = 'w1000';
@@ -1017,9 +1042,23 @@ function mpResolveAssetPath(path = '', base = MUSIC_MANIFEST) {
     return mpResolveUrl(base, raw);
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const mergedOptions = {
+            ...options,
+            signal: controller.signal,
+        };
+        return await fetch(url, mergedOptions);
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 async function mpLoadManifestSongs() {
     try {
-        const res = await fetch(MUSIC_MANIFEST, { cache: 'no-store' });
+        const res = await fetchWithTimeout(MUSIC_MANIFEST, { cache: 'no-store' }, 10000);
         if (!res.ok) return [];
         const data = await res.json();
         const entries = Array.isArray(data) ? data : (Array.isArray(data?.songs) ? data.songs : []);
@@ -1039,7 +1078,7 @@ async function mpLoadManifestSongs() {
 
 async function mpDiscoverFlacFilesFromDir() {
     try {
-        const res = await fetch(MUSIC_DIR, { cache: 'no-store' });
+        const res = await fetchWithTimeout(MUSIC_DIR, { cache: 'no-store' }, 10000);
         if (!res.ok) return [];
         const html = await res.text();
         const hrefs = html.match(/href="([^"]+)"/gi) || [];
@@ -1152,7 +1191,7 @@ function mpParseFlacMetadata(buffer, objectUrls) {
 async function mpReadFlacMetadata(url, objectUrls) {
     const getBuffer = async (useRange) => {
         const headers = useRange ? { Range: 'bytes=0-5242879' } : {};
-        const res = await fetch(url, { headers, cache: 'no-store' });
+        const res = await fetchWithTimeout(url, { headers, cache: 'no-store' }, useRange ? 12000 : 18000);
         if (!res.ok) throw new Error('FETCH_FAIL');
         return res.arrayBuffer();
     };
@@ -1203,6 +1242,47 @@ async function mpAutoDiscoverSongs(objectUrls) {
     return songs;
 }
 
+function applyAssetVersioning() {
+    const versionedEls = document.querySelectorAll('[data-versioned="true"]');
+    versionedEls.forEach(el => {
+        const attr = el.tagName === 'LINK' ? 'href' : 'src';
+        const raw = el.getAttribute(attr);
+        if (!raw) return;
+        try {
+            const url = new URL(raw, window.location.href);
+            url.searchParams.set('v', APP_RELEASE);
+            el.setAttribute(attr, url.toString());
+        } catch {
+            // Si la URL no es valida, no aplicamos versionado.
+        }
+    });
+}
+
+function ensureReleaseFreshness() {
+    try {
+        const url = new URL(window.location.href);
+        const currentParam = url.searchParams.get('v');
+        const storedRelease = localStorage.getItem(STORAGE_KEYS.appRelease);
+
+        if (storedRelease !== APP_RELEASE) {
+            localStorage.setItem(STORAGE_KEYS.appRelease, APP_RELEASE);
+            localStorage.removeItem(STORAGE_KEYS.seedVersion);
+        }
+
+        if (currentParam !== APP_RELEASE) {
+            url.searchParams.set('v', APP_RELEASE);
+            window.location.replace(url.toString());
+            return false;
+        }
+    } catch {
+        // Si algo falla, seguimos con la carga normal.
+    }
+    return true;
+}
+
+applyAssetVersioning();
+const RELEASE_READY = ensureReleaseFreshness();
+
 let photos   = normalizePhotosForDrive(readStorageArray(STORAGE_KEYS.photos, INIT_PHOTOS)).map(sanitizePhotoRecord);
 let memories = readStorageArray(STORAGE_KEYS.memories, INIT_MEMORIES).map(sanitizeMemoryRecord);
 let phrases  = readStorageArray(STORAGE_KEYS.phrases, INIT_PHRASES).map(sanitizePhraseRecord);
@@ -1238,11 +1318,12 @@ function applySeedMigrationIfNeeded() {
     }
 }
 
-applySeedMigrationIfNeeded();
-
-persistArray(STORAGE_KEYS.photos, photos);
-persistArray(STORAGE_KEYS.memories, memories);
-persistArray(STORAGE_KEYS.phrases, phrases);
+if (RELEASE_READY) {
+    applySeedMigrationIfNeeded();
+    persistArray(STORAGE_KEYS.photos, photos);
+    persistArray(STORAGE_KEYS.memories, memories);
+    persistArray(STORAGE_KEYS.phrases, phrases);
+}
 
 /* ================================================
    ✨  PARTÍCULAS
@@ -1615,32 +1696,62 @@ async function mpInit() {
 /* ================================================
    GALERIA
    ================================================ */
+function createGalleryPlaceholder(caption = '') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'gal-placeholder';
+    const icon = document.createElement('span');
+    icon.className = 'ph-icon';
+    icon.textContent = '📷';
+    const text = document.createElement('span');
+    text.className = 'ph-text';
+    text.textContent = caption || 'Agrega una foto especial';
+    wrapper.appendChild(icon);
+    wrapper.appendChild(text);
+    return wrapper;
+}
+
 function renderGallery() {
     const grid = document.getElementById('galleryGrid');
     grid.innerHTML = '';
     photos.forEach((ph, idx) => {
-        const safeCaption = escapeHtml(ph.caption || '');
+        const safeCaption = String(ph.caption || '').trim();
         const safeSrc = sanitizeImageUrl(ph.src || '');
         const el = document.createElement('div');
         el.className = 'gallery-item reveal';
         el.style.setProperty('--reveal-delay', `${Math.min(idx * 70, 420)}ms`);
         if (safeSrc) {
-            el.innerHTML = `<img src="${safeSrc}" alt="${safeCaption}" loading="lazy">
-                <div class="gal-overlay"><p class="gal-caption">${safeCaption}</p></div>`;
+            const img = document.createElement('img');
+            img.src = safeSrc;
+            img.alt = safeCaption;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.referrerPolicy = 'no-referrer';
+            img.addEventListener('error', () => {
+                el.replaceChildren(createGalleryPlaceholder(safeCaption));
+            }, { once: true });
+
+            const overlay = document.createElement('div');
+            overlay.className = 'gal-overlay';
+            const caption = document.createElement('p');
+            caption.className = 'gal-caption';
+            caption.textContent = safeCaption;
+            overlay.appendChild(caption);
+
+            el.appendChild(img);
+            el.appendChild(overlay);
             el.addEventListener('click', () => openLightbox(safeSrc));
         } else {
-            el.innerHTML = `<div class="gal-placeholder">
-                <span class="ph-icon">📷</span>
-                <span class="ph-text">${safeCaption}</span></div>`;
+            el.appendChild(createGalleryPlaceholder(safeCaption));
         }
         grid.appendChild(el);
     });
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'gallery-add-btn';
     btn.classList.add('reveal');
     btn.style.setProperty('--reveal-delay', `${Math.min(photos.length * 70, 500)}ms`);
     btn.innerHTML = `<span class="add-icon">+</span><span class="add-text">Agregar foto</span>`;
-    btn.onclick = () => openModal('photo');
+    btn.addEventListener('click', () => openModal('photo'));
     grid.appendChild(btn);
     observeReveal();
 }
@@ -1796,6 +1907,20 @@ function showToast(message, kind = 'info') {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
 }
 
+let globalErrorsBound = false;
+function bindGlobalErrorHandlers() {
+    if (globalErrorsBound) return;
+    globalErrorsBound = true;
+    window.addEventListener('error', event => {
+        if (event?.message) {
+            showToast('Ocurrio un error inesperado. Recarga la pagina.', 'warn');
+        }
+    });
+    window.addEventListener('unhandledrejection', () => {
+        showToast('No se pudo completar una accion. Intenta de nuevo.', 'warn');
+    });
+}
+
 function exportBackupData() {
     const payload = {
         version: 1,
@@ -1894,6 +2019,7 @@ function bindUiActions() {
     const lightbox = document.getElementById('lightbox');
     const btnCloseLightbox = document.getElementById('btnCloseLightbox');
     const modalOverlay = document.getElementById('modalOverlay');
+    const navLogoIcon = document.querySelector('.nav-logo-icon');
 
     if (hamburger) hamburger.addEventListener('click', toggleMenu);
     if (navLinks) {
@@ -1915,6 +2041,11 @@ function bindUiActions() {
 
     if (modalOverlay) modalOverlay.addEventListener('click', handleOverlayClick);
     if (btnCloseLightbox) btnCloseLightbox.addEventListener('click', closeLightbox);
+    if (navLogoIcon) {
+        navLogoIcon.addEventListener('error', () => {
+            navLogoIcon.style.display = 'none';
+        }, { once: true });
+    }
     if (lightbox) {
         lightbox.addEventListener('click', e => {
             if (e.target === lightbox) closeLightbox();
@@ -1951,6 +2082,8 @@ document.addEventListener('keydown', e => {
    🚀  INIT
    ================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!RELEASE_READY) return;
+    bindGlobalErrorHandlers();
     bindUiActions();
     createParticles();
     startCounterTicker();

@@ -1,35 +1,35 @@
 # ParaDianita
 
-Sitio estático romántico preparado para desplegarse en GitHub Pages.
+Sitio romantico estatico listo para desplegar en GitHub Pages.
 
-## Estructura
+## Estructura del proyecto
 
 ```text
 .
-├─ index.html
-├─ CNAME
-├─ .nojekyll
-└─ music/
-   ├─ library.json
-   └─ *.flac
+|-- index.html
+|-- CNAME
+|-- .nojekyll
+`-- music/
+    |-- library.json
+    `-- *.flac
 ```
 
 ## Despliegue en GitHub Pages
 
-1. Sube el repositorio a GitHub (rama `main`).
-2. Ve a `Settings` -> `Pages`.
+1. Sube el repositorio a la rama `main`.
+2. Ve a `Settings -> Pages`.
 3. En `Build and deployment` selecciona:
    - `Source`: `Deploy from a branch`
    - `Branch`: `main` y carpeta `/ (root)`
 4. Guarda y espera 1-3 minutos.
 
-Con `CNAME` configurado, GitHub Pages mantendrá el dominio personalizado.
+Con `CNAME` en la raiz, GitHub Pages mantiene el dominio personalizado.
 
-## Música
+## Musica
 
-- Guarda canciones en `music/` (formato `.flac`).
-- Mantén `music/library.json` actualizado para producción.
-- Recomendado: cada archivo `< 100 MB` para evitar problemas al subir al repositorio.
+- Guarda canciones en `music/` como `.flac`.
+- Manten `music/library.json` actualizado para produccion.
+- Recomendado: cada archivo menor a 100 MB.
 
 Ejemplo de `music/library.json`:
 
@@ -41,13 +41,24 @@ Ejemplo de `music/library.json`:
 
 ## Datos locales (fotos, recuerdos y frases)
 
-- Se guardan en `localStorage` del navegador del usuario.
-- Usa los botones de pie de página:
+- El contenido se guarda en `localStorage` del navegador.
+- Usa los botones del footer:
   - `Exportar respaldo`
   - `Importar respaldo`
 
-## Buenas prácticas aplicadas
+## Cache y versionado recomendado
 
-- Limpieza de archivos de respaldo local y checkpoints.
-- `.gitignore` reforzado para no subir archivos temporales/editor/logs.
-- Proyecto listo para repositorio público con estructura mínima.
+Para forzar que los clientes carguen la ultima version:
+
+1. Actualiza `APP_RELEASE` en `index.html`.
+2. Haz commit y push.
+3. Abre la URL del sitio normalmente; la app redirige a `?v=<APP_RELEASE>` automaticamente.
+
+Esto reduce cache viejo y permite migraciones de datos entre releases.
+
+## Mejoras aplicadas
+
+- Sanitizacion de contenido dinamico del usuario.
+- Manejo seguro de URLs externas para imagenes.
+- Mejoras de responsividad para pantallas pequenas.
+- Ajustes de repositorio (`.gitignore`, `.gitattributes`).
