@@ -1,29 +1,53 @@
 # ParaDianita
 
-Sitio estático romántico listo para desplegar en GitHub Pages.
+Sitio estático romántico preparado para desplegarse en GitHub Pages.
 
-## Publicación
+## Estructura
 
-1. Sube el contenido de este repositorio a la rama `main`.
-2. En GitHub: `Settings` -> `Pages`.
-3. En `Build and deployment`, selecciona:
+```text
+.
+├─ index.html
+├─ CNAME
+├─ .nojekyll
+└─ music/
+   ├─ library.json
+   └─ *.flac
+```
+
+## Despliegue en GitHub Pages
+
+1. Sube el repositorio a GitHub (rama `main`).
+2. Ve a `Settings` -> `Pages`.
+3. En `Build and deployment` selecciona:
    - `Source`: `Deploy from a branch`
    - `Branch`: `main` y carpeta `/ (root)`
 4. Guarda y espera 1-3 minutos.
 
+Con `CNAME` configurado, GitHub Pages mantendrá el dominio personalizado.
+
 ## Música
 
-- Archivos en `music/` (formato `.flac`, menos de 100 MB por archivo).
-- Lista base en `music/library.json`.
-- El player también intenta descubrir automáticamente los `.flac`.
+- Guarda canciones en `music/` (formato `.flac`).
+- Mantén `music/library.json` actualizado para producción.
+- Recomendado: cada archivo `< 100 MB` para evitar problemas al subir al repositorio.
 
-## Respaldo de datos (fotos/recuerdos/frases)
+Ejemplo de `music/library.json`:
 
-- Usa los botones del footer:
+```json
+[
+  { "src": "music/Impacto.flac", "title": "Impacto", "artist": "Artista desconocido" }
+]
+```
+
+## Datos locales (fotos, recuerdos y frases)
+
+- Se guardan en `localStorage` del navegador del usuario.
+- Usa los botones de pie de página:
   - `Exportar respaldo`
   - `Importar respaldo`
-- Esto evita pérdida de datos al cambiar de navegador/dispositivo.
 
-## Nota de privacidad
+## Buenas prácticas aplicadas
 
-El sitio usa `localStorage` para guardar datos del usuario final (fotos, recuerdos y frases) en su navegador.
+- Limpieza de archivos de respaldo local y checkpoints.
+- `.gitignore` reforzado para no subir archivos temporales/editor/logs.
+- Proyecto listo para repositorio público con estructura mínima.

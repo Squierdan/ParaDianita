@@ -1,11 +1,31 @@
-# Backups/local checkpoints
+# Local backups and checkpoints
 index.checkpoint-*.html
 index.html.pre-fix-backup
+*.bak
+*.tmp
+*.temp
+*.old
+*~
 
-# Editor/system files
-.vscode/
+# OS/editor files
+.DS_Store
 Thumbs.db
 Desktop.ini
+.vscode/
+.idea/
 
-# Temporary validation files
+# Logs/debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Temporary validation/check files
+__tmp_check.js
 tmp-check.js
