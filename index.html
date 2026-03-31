@@ -8,7 +8,9 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
     <meta name="theme-color" content="#0d0a0e">
-    <title>Nuestro Mundo ♥</title>
+    <title>Diana y Elian ♥</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cdn-icons-png.flaticon.com/512/220/220073.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/220/220073.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
@@ -92,7 +94,25 @@
             border-bottom: 1px solid rgba(201,169,110,0.1);
             transition: var(--ease);
         }
-        .nav-logo { font-family: var(--serif); font-size: 1.4rem; color: var(--gold); letter-spacing: .05em; }
+        .nav-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            font-family: var(--serif);
+            font-size: 1.4rem;
+            color: var(--gold);
+            letter-spacing: .05em;
+            line-height: 1;
+        }
+        .nav-logo-icon {
+            width: 23px;
+            height: 23px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(201,169,110,.38);
+            box-shadow: 0 0 12px rgba(201,169,110,.16);
+            flex-shrink: 0;
+        }
         .nav-links { display: flex; gap: 2rem; list-style: none; }
         .nav-links a {
             color: var(--muted); text-decoration: none;
@@ -380,6 +400,23 @@
             display: flex; flex-wrap: wrap; justify-content: center; gap: .8rem;
         }
         .footer-tools .btn-ghost { padding: .6rem 1rem; font-size: .68rem; }
+        .icon-credit {
+            margin-top: 1rem;
+            font-size: .62rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .icon-credit a {
+            color: var(--muted);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(201,169,110,.35);
+            transition: var(--ease);
+        }
+        .icon-credit a:hover {
+            color: var(--gold-lt);
+            border-bottom-color: rgba(232,213,176,.75);
+        }
         .toast {
             position: fixed; right: 16px; bottom: 98px; z-index: 400;
             padding: .65rem .9rem; border-radius: 10px;
@@ -561,7 +598,17 @@
 
 <!-- NAV -->
 <nav id="navbar">
-    <div class="nav-logo">✦ Nuestro Mundo</div>
+    <div class="nav-logo">
+        <img
+            class="nav-logo-icon"
+            src="https://cdn-icons-png.flaticon.com/512/220/220073.png"
+            alt="Ícono de gato"
+            loading="eager"
+            decoding="async"
+            referrerpolicy="no-referrer"
+        >
+        <span>Diana y Elian</span>
+    </div>
     <ul class="nav-links" id="navLinks">
         <li><a href="#gallery" data-close-menu="true">Fotos</a></li>
         <li><a href="#memories" data-close-menu="true">Recuerdos</a></li>
@@ -672,6 +719,11 @@
         <button class="btn-ghost" type="button" id="btnExportBackup">Exportar respaldo</button>
         <button class="btn-ghost" type="button" id="btnImportBackup">Importar respaldo</button>
     </div>
+    <p class="icon-credit">
+        <a href="https://www.flaticon.es/iconos-gratis/gatos" title="gatos iconos" target="_blank" rel="noopener noreferrer">
+            Gatos iconos creados por Freepik - Flaticon
+        </a>
+    </p>
 </footer>
 <input id="importBackupInput" type="file" accept="application/json,.json" hidden>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
