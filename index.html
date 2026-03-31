@@ -791,7 +791,7 @@ const CONFIG = {
     startUtcOffset: '-05:00',          // 🌎 Offset de Quito (GMT-5)
     startTimeZone: 'America/Guayaquil',// 🕒 Zona horaria fija para cálculo
     yourName:    'Elian C.',           // 👤 Tu nombre
-    letterText:  `Diana,
+    letterText:  `Diana, mi amorcito
 
 Hay un silencio distinto cuando llegas,
 una quietud que ordena los espacios.
@@ -820,6 +820,7 @@ const STORAGE_KEYS = Object.freeze({
     photos: 'photos',
     memories: 'memories',
     phrases: 'phrases',
+    seedVersion: 'seedVersion',
 });
 
 const DRIVE_THUMB_SIZE = 'w1000';
@@ -867,21 +868,38 @@ const INIT_PHOTOS = [
     { src: 'https://drive.google.com/thumbnail?id=1NN0n-4fjjSrxoZ1ksKg7PafV3naS32g_&sz=w1000', caption: 'El día que nos conocimos' },
     { src: 'https://drive.google.com/thumbnail?id=1tXpyp33WNTVQQjrYnqyozKoQVXsI2lRR&sz=w1000', caption: 'Nuestra primera aventura' },
     { src: 'https://drive.google.com/thumbnail?id=1fVoD_HBAI86v8iUl-79iXbvryqcV_3en&sz=w1000', caption: 'Un domingo perfecto' },
-    { src: '', caption: 'Siempre sonriendo juntos' },
+    { src: 'https://drive.google.com/thumbnail?id=1hmEV6rTjgy3Z2Y1s87GFEUuDdEpukIGg&sz=w1000', caption: 'Siempre sonriendo juntos' },
 ];
 
 const INIT_MEMORIES = [
-    { date: 'Alrededor de mediados del 2022',    emoji: '💫', title: 'Nos conocimos',     text: 'Apenas nos conocíamos por foto jajaja' },
-    { date: 'Julio 2023',    emoji: '🌅', title: 'Primera aventura',        text: 'Nuestro primer viaje, nuestra primera aventura.' },
-    { date: 'Diciembre 2023',emoji: '🎄', title: 'Navidad especial',        text: 'La primera navidad que pasamos juntos. Mágica e inolvidable.' },
-    { date: 'Junio 2024',    emoji: '🎂', title: 'Un año juntos',           text: 'Un año completo de risas, aprendizajes y amor verdadero.' },
+    {
+        date: 'Tu próxima fecha especial',
+        emoji: '✨',
+        title: 'Escribe aquí su recuerdo favorito',
+        text: 'Elian o tú pueden guardar aquí ese momento bonito que quieran recordar siempre: cuándo pasó, qué sintieron y por qué fue especial.',
+    },
 ];
 
 const INIT_PHRASES = [
-    { text: 'Eres la razón por la que creo en los finales felices.',    author: CONFIG.yourName },
-    { text: 'Contigo el tiempo vuela, y aun así, nunca es suficiente.', author: CONFIG.yourName },
-    { text: 'Te elegiría en cada vida, en cada universo, sin dudarlo.',  author: CONFIG.yourName },
-    { text: 'Mi lugar favorito en el mundo es a tu lado.',               author: CONFIG.yourName },
+    {
+        text: 'Aquí pueden escribir una frase de ustedes dos. Elian o tú pueden editarla cuando quieran para que esta sección siempre se sienta suya.',
+        author: 'Diana o Elian',
+    },
+];
+
+const LEGACY_MEMORY_MARKERS = [
+    'el primer encuentro',
+    'primera aventura',
+    'navidad especial',
+    'un año juntos',
+    'nos conocimos',
+];
+
+const LEGACY_PHRASE_MARKERS = [
+    'eres la razón por la que creo en los finales felices',
+    'contigo el tiempo vuela, y aun así, nunca es suficiente',
+    'te elegiría en cada vida, en cada universo, sin dudarlo',
+    'mi lugar favorito en el mundo es a tu lado',
 ];
 
 /* ================================================
@@ -1189,6 +1207,38 @@ let photos   = normalizePhotosForDrive(readStorageArray(STORAGE_KEYS.photos, INI
 let memories = readStorageArray(STORAGE_KEYS.memories, INIT_MEMORIES).map(sanitizeMemoryRecord);
 let phrases  = readStorageArray(STORAGE_KEYS.phrases, INIT_PHRASES).map(sanitizePhraseRecord);
 let currentModal = '';
+
+function applySeedMigrationIfNeeded() {
+    try {
+        if (localStorage.getItem(STORAGE_KEYS.seedVersion) === 'v3') return;
+
+        const memoryHasTemplate = memories.length === 1 && String(memories[0]?.title || '').includes('Escribe aquí su recuerdo favorito');
+        const phraseHasTemplate = phrases.length === 1 && String(phrases[0]?.text || '').includes('Aquí pueden escribir una frase de ustedes dos');
+
+        const memoriesAreLegacy = memories.length > 1 && memories.every(item => {
+            const title = String(item?.title || '').trim().toLowerCase();
+            return LEGACY_MEMORY_MARKERS.some(marker => title.includes(marker));
+        });
+
+        const phrasesAreLegacy = phrases.length > 1 && phrases.every(item => {
+            const text = String(item?.text || '').trim().toLowerCase();
+            return LEGACY_PHRASE_MARKERS.some(marker => text.includes(marker));
+        });
+
+        if (!memoryHasTemplate && (memories.length === 0 || memoriesAreLegacy)) {
+            memories = INIT_MEMORIES.map(sanitizeMemoryRecord);
+        }
+        if (!phraseHasTemplate && (phrases.length === 0 || phrasesAreLegacy)) {
+            phrases = INIT_PHRASES.map(sanitizePhraseRecord);
+        }
+
+        localStorage.setItem(STORAGE_KEYS.seedVersion, 'v3');
+    } catch {
+        // Si localStorage falla, continuamos con el estado en memoria.
+    }
+}
+
+applySeedMigrationIfNeeded();
 
 persistArray(STORAGE_KEYS.photos, photos);
 persistArray(STORAGE_KEYS.memories, memories);
