@@ -563,12 +563,12 @@
 <nav id="navbar">
     <div class="nav-logo">✦ Nuestro Mundo</div>
     <ul class="nav-links" id="navLinks">
-        <li><a href="#gallery"  onclick="closeMenu()">Fotos</a></li>
-        <li><a href="#memories" onclick="closeMenu()">Recuerdos</a></li>
-        <li><a href="#phrases"  onclick="closeMenu()">Frases</a></li>
-        <li><a href="#letter"   onclick="closeMenu()">Para Ti</a></li>
+        <li><a href="#gallery" data-close-menu="true">Fotos</a></li>
+        <li><a href="#memories" data-close-menu="true">Recuerdos</a></li>
+        <li><a href="#phrases" data-close-menu="true">Frases</a></li>
+        <li><a href="#letter" data-close-menu="true">Para Ti</a></li>
     </ul>
-    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menú">
+    <button class="hamburger" id="hamburger" aria-label="Menú">
         <span></span><span></span><span></span>
     </button>
 </nav>
@@ -629,7 +629,7 @@
         </header>
         <div class="timeline" id="timeline"></div>
         <div style="text-align:center;margin-top:2rem">
-            <button class="btn-primary" onclick="openModal('memory')">+ Agregar recuerdo</button>
+            <button class="btn-primary" type="button" id="btnAddMemory">+ Agregar recuerdo</button>
         </div>
     </div>
 </section>
@@ -644,7 +644,7 @@
         </header>
         <div class="phrases-grid" id="phrasesGrid"></div>
         <div style="text-align:center;margin-top:2.5rem">
-            <button class="btn-primary" onclick="openModal('phrase')">+ Agregar frase</button>
+            <button class="btn-primary" type="button" id="btnAddPhrase">+ Agregar frase</button>
         </div>
     </div>
 </section>
@@ -669,28 +669,28 @@
     <span class="footer-heart">♥</span>
     <p class="footer-text">Hecho con amor · Solo para ti</p>
     <div class="footer-tools">
-        <button class="btn-ghost" type="button" onclick="exportBackupData()">Exportar respaldo</button>
-        <button class="btn-ghost" type="button" onclick="document.getElementById('importBackupInput').click()">Importar respaldo</button>
+        <button class="btn-ghost" type="button" id="btnExportBackup">Exportar respaldo</button>
+        <button class="btn-ghost" type="button" id="btnImportBackup">Importar respaldo</button>
     </div>
 </footer>
 <input id="importBackupInput" type="file" accept="application/json,.json" hidden>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+<div class="modal-overlay" id="modalOverlay">
     <div class="modal" id="modalBox">
         <h3 id="modalTitle"></h3>
         <div id="modalBody"></div>
         <div class="modal-actions">
-            <button class="btn-ghost"    onclick="closeModal()">Cancelar</button>
-            <button class="btn-primary"  onclick="saveModal()">Guardar</button>
+            <button class="btn-ghost" type="button" id="btnModalCancel">Cancelar</button>
+            <button class="btn-primary" type="button" id="btnModalSave">Guardar</button>
         </div>
     </div>
 </div>
 
 <!-- LIGHTBOX -->
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <button class="lb-close" onclick="closeLightbox()">✕</button>
+<div class="lightbox" id="lightbox">
+    <button class="lb-close" type="button" id="btnCloseLightbox">✕</button>
     <img id="lbImg" src="" alt="">
 </div>
 
@@ -735,7 +735,10 @@
    ⚙️  CONFIGURACIÓN — Edita esto primero
    ================================================ */
 const CONFIG = {
-    startDate:   '2025-06-26',         // 📅 Fecha inicio de la relación (YYYY-MM-DD)
+    startDate:   '2025-06-26',         // 📅 Fecha inicio (YYYY-MM-DD)
+    startTime:   '00:00:00',           // ⏰ Hora inicio local (HH:mm:ss)
+    startUtcOffset: '-05:00',          // 🌎 Offset de Quito (GMT-5)
+    startTimeZone: 'America/Guayaquil',// 🕒 Zona horaria fija para cálculo
     yourName:    'Elian C.',           // 👤 Tu nombre
     letterText:  `Desde el primer momento en que te vi, supe que algo especial estaba comenzando.
 Cada día contigo es un regalo que atesoro profundamente.
@@ -784,6 +787,7 @@ function normalizePhotosForDrive(list = []) {
 const MUSIC_DIR = 'music/';
 const MUSIC_MANIFEST = 'music/library.json';
 const SONGS_FALLBACK = [
+    { src: 'music/Impacto.flac', title: 'Impacto', artist: 'Artista' },
     { src: 'music/Locos.flac', title: 'Locos', artist: 'Artista' },
     { src: 'music/Soñé (En Vivo).flac', title: 'Soñé (En Vivo)', artist: 'Artista' },
 ];
@@ -853,7 +857,9 @@ function sanitizeImageUrl(url = '') {
     if (isDataImage) return driveUrl;
     try {
         const parsed = new URL(driveUrl, window.location.href);
-        if (parsed.protocol === 'http:' || parsed.protocol === 'https:' || parsed.protocol === 'blob:') {
+        if (parsed.protocol === 'blob:' || parsed.protocol === 'https:') return parsed.href;
+        const isLocalDevHost = /^localhost$|^127\.0\.0\.1$|^\[::1\]$/.test(window.location.hostname);
+        if (parsed.protocol === 'http:' && isLocalDevHost) {
             return parsed.href;
         }
         return '';
@@ -866,6 +872,22 @@ function sanitizePhotoRecord(photo = {}) {
     return {
         src: sanitizeImageUrl(photo.src || ''),
         caption: String(photo.caption || '').trim().slice(0, 180),
+    };
+}
+
+function sanitizeMemoryRecord(memory = {}) {
+    return {
+        date: String(memory.date || '').trim().slice(0, 60),
+        emoji: String(memory.emoji || '💫').trim().slice(0, 4) || '💫',
+        title: String(memory.title || '').trim().slice(0, 120),
+        text: String(memory.text || '').trim().slice(0, 500),
+    };
+}
+
+function sanitizePhraseRecord(phrase = {}) {
+    return {
+        text: String(phrase.text || '').trim().slice(0, 320),
+        author: String(phrase.author || '').trim().slice(0, 80),
     };
 }
 
@@ -913,8 +935,9 @@ async function mpLoadManifestSongs() {
         const res = await fetch(MUSIC_MANIFEST, { cache: 'no-store' });
         if (!res.ok) return [];
         const data = await res.json();
-        if (!Array.isArray(data)) return [];
-        return data
+        const entries = Array.isArray(data) ? data : (Array.isArray(data?.songs) ? data.songs : []);
+        if (!entries.length) return [];
+        return entries
             .map(item => ({
                 src: mpResolveAssetPath(item.src || '', MUSIC_MANIFEST),
                 title: item.title || mpFileNameFromPath(item.src || ''),
@@ -1068,39 +1091,39 @@ async function mpAutoDiscoverSongs(objectUrls) {
 
     const files = await mpDiscoverFlacFilesFromDir();
     if (!files.length) {
-        const fallbackWithMeta = [];
-        for (const song of SONGS_FALLBACK) {
+        const fallbackWithMeta = await Promise.all(SONGS_FALLBACK.map(async song => {
             const src = mpResolveAssetPath(song.src, window.location.href);
             const meta = await mpReadFlacMetadata(src, objectUrls);
-            fallbackWithMeta.push({
+            return {
                 src,
                 title: meta.title || song.title || mpFileNameFromPath(src),
                 artist: meta.artist || song.artist || 'Artista desconocido',
                 cover: meta.cover || song.cover || '',
-            });
-        }
+            };
+        }));
         return fallbackWithMeta;
     }
 
-    const songs = [];
-    for (const src of files) {
+    const songs = await Promise.all(files.map(async src => {
         const meta = await mpReadFlacMetadata(src, objectUrls);
-        songs.push({
+        return {
             src,
             title: meta.title || mpFileNameFromPath(src),
             artist: meta.artist || 'Artista desconocido',
             cover: meta.cover || '',
-        });
-    }
+        };
+    }));
     return songs;
 }
 
 let photos   = normalizePhotosForDrive(readStorageArray(STORAGE_KEYS.photos, INIT_PHOTOS)).map(sanitizePhotoRecord);
-let memories = readStorageArray(STORAGE_KEYS.memories, INIT_MEMORIES);
-let phrases  = readStorageArray(STORAGE_KEYS.phrases, INIT_PHRASES);
+let memories = readStorageArray(STORAGE_KEYS.memories, INIT_MEMORIES).map(sanitizeMemoryRecord);
+let phrases  = readStorageArray(STORAGE_KEYS.phrases, INIT_PHRASES).map(sanitizePhraseRecord);
 let currentModal = '';
 
 persistArray(STORAGE_KEYS.photos, photos);
+persistArray(STORAGE_KEYS.memories, memories);
+persistArray(STORAGE_KEYS.phrases, phrases);
 
 /* ================================================
    ✨  PARTÍCULAS
@@ -1119,26 +1142,133 @@ function createParticles() {
 /* ================================================
    ⏱️  CONTADOR
    ================================================ */
-function updateCounter() {
-    const diff   = Date.now() - new Date(CONFIG.startDate).getTime();
-    const total  = Math.floor(diff / 864e5);
-    const years  = Math.floor(total / 365);
-    const months = Math.floor((total % 365) / 30);
-    const days   = total % 30;
-    const hours  = Math.floor((diff % 864e5) / 36e5);
+function safeCounterInt(value) {
+    return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+}
 
-    const anim = (id, val) => {
-        let cur = 0, step = Math.ceil(val / 40);
-        const t = setInterval(() => {
-            cur = Math.min(cur + step, val);
-            document.getElementById(id).textContent = cur;
-            if (cur >= val) clearInterval(t);
-        }, 40);
+function setCounterValues(years, months, days, hours) {
+    document.getElementById('cnt-years').textContent = safeCounterInt(years);
+    document.getElementById('cnt-months').textContent = safeCounterInt(months);
+    document.getElementById('cnt-days').textContent = safeCounterInt(days);
+    document.getElementById('cnt-hours').textContent = safeCounterInt(hours);
+}
+
+function daysInMonth(year, month) {
+    return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+const TZ_FORMATTER_CACHE = new Map();
+function getTimeZoneFormatter(timeZone) {
+    if (TZ_FORMATTER_CACHE.has(timeZone)) return TZ_FORMATTER_CACHE.get(timeZone);
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+    TZ_FORMATTER_CACHE.set(timeZone, formatter);
+    return formatter;
+}
+
+function getTimeZoneParts(date, timeZone) {
+    const parts = getTimeZoneFormatter(timeZone).formatToParts(date);
+
+    const map = {};
+    for (const part of parts) {
+        if (part.type !== 'literal') map[part.type] = part.value;
+    }
+    return {
+        year: Number(map.year),
+        month: Number(map.month),
+        day: Number(map.day),
+        hour: Number(map.hour),
+        minute: Number(map.minute),
+        second: Number(map.second),
     };
-    anim('cnt-years',  years);
-    anim('cnt-months', months);
-    anim('cnt-days',   days);
-    anim('cnt-hours',  hours);
+}
+
+const RELATION_START = Object.freeze((() => {
+    const [y, m, d] = String(CONFIG.startDate || '1970-01-01').split('-').map(Number);
+    const [hh = 0, mm = 0, ss = 0] = String(CONFIG.startTime || '00:00:00').split(':').map(Number);
+    const iso = `${String(CONFIG.startDate)}T${String(CONFIG.startTime || '00:00:00')}${String(CONFIG.startUtcOffset || '-05:00')}`;
+    const utcMs = Date.parse(iso);
+    return {
+        year: y || 1970,
+        month: m || 1,
+        day: d || 1,
+        hour: hh || 0,
+        minute: mm || 0,
+        second: ss || 0,
+        utcMs: Number.isFinite(utcMs) ? utcMs : Date.UTC((y || 1970), (m || 1) - 1, d || 1, (hh || 0) + 5, mm || 0, ss || 0),
+        timeZone: CONFIG.startTimeZone || 'America/Guayaquil',
+    };
+})());
+
+function updateCounter() {
+    const nowUtcMs = Date.now();
+    if (nowUtcMs < RELATION_START.utcMs) {
+        setCounterValues(0, 0, 0, 0);
+        return;
+    }
+
+    const now = getTimeZoneParts(new Date(nowUtcMs), RELATION_START.timeZone);
+    const start = RELATION_START;
+
+    let years = now.year - start.year;
+    let months = now.month - start.month;
+    let days = now.day - start.day;
+    let hours = now.hour - start.hour;
+    let minutes = now.minute - start.minute;
+    let seconds = now.second - start.second;
+
+    if (seconds < 0) {
+        seconds += 60;
+        minutes -= 1;
+    }
+    if (minutes < 0) {
+        minutes += 60;
+        hours -= 1;
+    }
+    if (hours < 0) {
+        hours += 24;
+        days -= 1;
+    }
+    if (days < 0) {
+        months -= 1;
+        let borrowYear = now.year;
+        let borrowMonth = now.month - 1;
+        if (borrowMonth < 1) {
+            borrowMonth = 12;
+            borrowYear -= 1;
+        }
+        days += daysInMonth(borrowYear, borrowMonth);
+    }
+    if (months < 0) {
+        months += 12;
+        years -= 1;
+    }
+
+    if (years < 0) {
+        setCounterValues(0, 0, 0, 0);
+        return;
+    }
+    setCounterValues(years, months, days, hours);
+}
+
+let counterTimer = null;
+function startCounterTicker() {
+    updateCounter();
+    if (counterTimer) clearInterval(counterTimer);
+    const now = Date.now();
+    const msToNextMinute = 60000 - (now % 60000);
+    setTimeout(() => {
+        updateCounter();
+        counterTimer = setInterval(updateCounter, 60000);
+    }, msToNextMinute);
 }
 
 /* ================================================
@@ -1474,11 +1604,12 @@ function openModal(type) {
                 <textarea id="inp-text" placeholder="Cuéntame sobre este momento..."></textarea></div>`;
     } else if (type === 'phrase') {
         title.textContent = 'Agregar Frase';
+        const safeAuthor = escapeHtml(CONFIG.yourName || '');
         body.innerHTML = `
             <div class="form-group"><label>Frase</label>
                 <textarea id="inp-phrase" placeholder="Escribe una frase especial..."></textarea></div>
             <div class="form-group"><label>Firmado por</label>
-                <input type="text" id="inp-phraseAuthor" value="${CONFIG.yourName}"/></div>`;
+                <input type="text" id="inp-phraseAuthor" value="${safeAuthor}"/></div>`;
     }
     document.getElementById('modalOverlay').classList.add('open');
 }
@@ -1503,17 +1634,17 @@ function saveModal() {
     } else if (currentModal === 'memory') {
         const date  = document.getElementById('inp-date').value.trim();
         const emoji = document.getElementById('inp-emoji').value.trim() || '💫';
-        const title = document.getElementById('inp-title').value.trim();
+        const titleValue = document.getElementById('inp-title').value.trim();
         const text  = document.getElementById('inp-text').value.trim();
-        if (!title) return;
-        memories.push({ date, emoji, title, text });
+        if (!titleValue) return;
+        memories.push(sanitizeMemoryRecord({ date, emoji, title: titleValue, text }));
         persistArray(STORAGE_KEYS.memories, memories);
         renderTimeline();
     } else if (currentModal === 'phrase') {
         const text   = document.getElementById('inp-phrase').value.trim();
         const author = document.getElementById('inp-phraseAuthor').value.trim();
         if (!text) return;
-        phrases.push({ text, author });
+        phrases.push(sanitizePhraseRecord({ text, author }));
         persistArray(STORAGE_KEYS.phrases, phrases);
         renderPhrases();
     }
@@ -1576,8 +1707,8 @@ async function importBackupData(event) {
         const parsed = JSON.parse(text);
         const incoming = parsed?.data || {};
         const nextPhotos = Array.isArray(incoming.photos) ? incoming.photos.map(sanitizePhotoRecord) : photos;
-        const nextMemories = Array.isArray(incoming.memories) ? incoming.memories : memories;
-        const nextPhrases = Array.isArray(incoming.phrases) ? incoming.phrases : phrases;
+        const nextMemories = Array.isArray(incoming.memories) ? incoming.memories.map(sanitizeMemoryRecord) : memories;
+        const nextPhrases = Array.isArray(incoming.phrases) ? incoming.phrases.map(sanitizePhraseRecord) : phrases;
 
         photos = nextPhotos;
         memories = nextMemories;
@@ -1594,7 +1725,7 @@ async function importBackupData(event) {
     } catch {
         showToast('El archivo no es un respaldo válido.', 'warn');
     } finally {
-        event.target.value = '';
+        if (event?.target) event.target.value = '';
     }
 }
 
@@ -1635,6 +1766,43 @@ function closeMenu() {
     document.getElementById('navLinks').classList.remove('open');
     document.getElementById('hamburger').classList.remove('open');
 }
+
+function bindUiActions() {
+    const navLinks = document.getElementById('navLinks');
+    const hamburger = document.getElementById('hamburger');
+    const importInput = document.getElementById('importBackupInput');
+    const btnImportBackup = document.getElementById('btnImportBackup');
+    const lightbox = document.getElementById('lightbox');
+    const btnCloseLightbox = document.getElementById('btnCloseLightbox');
+    const modalOverlay = document.getElementById('modalOverlay');
+
+    if (hamburger) hamburger.addEventListener('click', toggleMenu);
+    if (navLinks) {
+        navLinks.querySelectorAll('[data-close-menu="true"]').forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+    }
+
+    document.getElementById('btnAddMemory')?.addEventListener('click', () => openModal('memory'));
+    document.getElementById('btnAddPhrase')?.addEventListener('click', () => openModal('phrase'));
+    document.getElementById('btnExportBackup')?.addEventListener('click', exportBackupData);
+    document.getElementById('btnModalCancel')?.addEventListener('click', closeModal);
+    document.getElementById('btnModalSave')?.addEventListener('click', saveModal);
+
+    if (btnImportBackup && importInput) {
+        btnImportBackup.addEventListener('click', () => importInput.click());
+        importInput.addEventListener('change', importBackupData);
+    }
+
+    if (modalOverlay) modalOverlay.addEventListener('click', handleOverlayClick);
+    if (btnCloseLightbox) btnCloseLightbox.addEventListener('click', closeLightbox);
+    if (lightbox) {
+        lightbox.addEventListener('click', e => {
+            if (e.target === lightbox) closeLightbox();
+        });
+    }
+}
+
 let scrollFxTicking = false;
 function applyScrollEffects() {
     const y = window.scrollY;
@@ -1664,10 +1832,9 @@ document.addEventListener('keydown', e => {
    🚀  INIT
    ================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
-    const importInput = document.getElementById('importBackupInput');
-    if (importInput) importInput.addEventListener('change', importBackupData);
+    bindUiActions();
     createParticles();
-    updateCounter();
+    startCounterTicker();
     renderGallery();
     renderTimeline();
     renderPhrases();
@@ -1675,7 +1842,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await mpInit();
     applyScrollEffects();
     observeReveal();
-    setInterval(updateCounter, 60000);
 });
 </script>
 </body>
