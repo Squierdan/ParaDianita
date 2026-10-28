@@ -1,5 +1,5 @@
 ﻿[
-  { "src": "music/Impacto.flac", "title": "Impacto", "artist": "Artista desconocido" },
-  { "src": "music/Locos.flac", "title": "Locos", "artist": "Artista desconocido" },
-  { "src": "music/Soñé (En Vivo).flac", "title": "Soñé (En Vivo)", "artist": "Artista desconocido" }
+  { "src": "music/Impacto.flac", "title": "Impacto", "artist": "Enjambre, Denise Gutiérrez", "album": "El Segundo Es Felino", "cover": "assets/covers/impacto.jpg" },
+  { "src": "music/Locos.flac", "title": "Locos", "artist": "León Larregui", "album": "Voluma", "cover": "assets/covers/locos.jpg" },
+  { "src": "music/Soñé (En Vivo).flac", "title": "Soñé (En Vivo)", "artist": "Zoé", "album": "MTV Unplugged Música de Fondo", "cover": "assets/covers/sone.jpg" }
 ]
